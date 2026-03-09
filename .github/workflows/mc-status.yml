@@ -25,9 +25,9 @@ jobs:
           host = os.environ["MC_HOST"]
           port = os.environ["MC_PORT"]
 
-          url = f"https://api.mcsrvstat.us/2/{host}:{port}"
+          url = f"https://api.mcstatus.io/v2/status/java/{host}:{port}"
 
-          with urllib.request.urlopen(url) as response:
+          with urllib.request.urlopen(url, timeout=20) as response:
               data = json.loads(response.read().decode())
 
           online = data.get("online", False)
@@ -64,5 +64,6 @@ jobs:
               method="POST"
           )
 
-          urllib.request.urlopen(req)
+          urllib.request.urlopen(req, timeout=20)
+          print("Sent webhook")
           PY
