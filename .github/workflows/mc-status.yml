@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install mcstatus
+        run: pip install mcstatus
+
       - name: Check server and send webhook
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -20,30 +23,23 @@ jobs:
           import json
           import os
           import urllib.request
+          from mcstatus import JavaServer
 
           webhook = os.environ["DISCORD_WEBHOOK"]
           host = os.environ["MC_HOST"]
-          port = os.environ["MC_PORT"]
+          port = int(os.environ["MC_PORT"])
 
-          url = f"https://api.mcstatus.io/v2/status/java/{host}:{port}"
+          try:
+              server = JavaServer.lookup(f"{host}:{port}")
+              status_data = server.status()
 
-          req_api = urllib.request.Request(
-              url,
-              headers={"User-Agent": "Mozilla/5.0"}
-          )
-
-          with urllib.request.urlopen(req_api, timeout=20) as response:
-              data = json.loads(response.read().decode())
-
-          online = data.get("online", False)
-
-          if online:
-              player_online = data.get("players", {}).get("online", 0)
-              player_max = data.get("players", {}).get("max", 0)
+              player_online = status_data.players.online
+              player_max = status_data.players.max
               status = "🟢 Online"
               players = f"{player_online}/{player_max}"
               color = 3066993
-          else:
+
+          except Exception:
               status = "🔴 Offline"
               players = "0/0"
               color = 15158332
