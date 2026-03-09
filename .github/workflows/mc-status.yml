@@ -1,0 +1,68 @@
+name: Minecraft Status
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check server and send webhook
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MC_HOST: ${{ secrets.MC_HOST }}
+          MC_PORT: ${{ secrets.MC_PORT }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook = os.environ["DISCORD_WEBHOOK"]
+          host = os.environ["MC_HOST"]
+          port = os.environ["MC_PORT"]
+
+          url = f"https://api.mcsrvstat.us/2/{host}:{port}"
+
+          with urllib.request.urlopen(url) as response:
+              data = json.loads(response.read().decode())
+
+          online = data.get("online", False)
+
+          if online:
+              player_online = data.get("players", {}).get("online", 0)
+              player_max = data.get("players", {}).get("max", 0)
+              status = "🟢 Online"
+              players = f"{player_online}/{player_max}"
+              color = 3066993
+          else:
+              status = "🔴 Offline"
+              players = "0/0"
+              color = 15158332
+
+          payload = {
+              "embeds": [
+                  {
+                      "title": "Minecraft Server",
+                      "color": color,
+                      "fields": [
+                          {"name": "STATUS", "value": f"`{status}`", "inline": True},
+                          {"name": "PLAYERS", "value": f"`{players}`", "inline": True},
+                          {"name": "SERVER INFO", "value": "`1.21.11 Server ip:SMPVIRTUVE.aternos.me:57445`", "inline": False}
+                      ]
+                  }
+              ]
+          }
+
+          req = urllib.request.Request(
+              webhook,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST"
+          )
+
+          urllib.request.urlopen(req)
+          PY
