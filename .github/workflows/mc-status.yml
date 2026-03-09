@@ -38,7 +38,6 @@ jobs:
               status = "🟢 Online"
               players = f"{player_online}/{player_max}"
               color = 3066993
-
           except Exception:
               status = "🔴 Offline"
               players = "0/0"
